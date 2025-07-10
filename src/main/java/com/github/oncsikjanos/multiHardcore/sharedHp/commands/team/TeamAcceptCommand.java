@@ -8,23 +8,23 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
-import net.kyori.adventure.text.Component;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
-public class TeamCreateCommand extends TeamCommand {
+public class TeamAcceptCommand extends TeamCommand {
 
-    public TeamCreateCommand(TeamHandler teamHandler) {
+    public TeamAcceptCommand(TeamHandler teamHandler) {
         super(teamHandler);
     }
 
-    public static LiteralArgumentBuilder<CommandSourceStack> teamCreateCommand(){
-        return Commands.literal("team").then(
-                Commands.literal("create").executes(TeamCreateCommand::teamCreationLogic));
+    public static LiteralArgumentBuilder<CommandSourceStack> teamJoinCommand() {
+        /return Commands.literal("team").then(
+                Commands.literal("join").then(Commands.argument("player_name")
+                        .executes(TeamAcceptCommand::teamJoinLogic)));*/
     }
 
-    private static int teamCreationLogic(CommandContext<CommandSourceStack> ctx){
+    private static int teamJoinLogic(CommandContext<CommandSourceStack> ctx){
         CommandSender sender = ctx.getSource().getSender();
         Entity executor = ctx.getSource().getExecutor();
 
@@ -58,4 +58,5 @@ public class TeamCreateCommand extends TeamCommand {
 
         return Command.SINGLE_SUCCESS;
     }
+
 }
