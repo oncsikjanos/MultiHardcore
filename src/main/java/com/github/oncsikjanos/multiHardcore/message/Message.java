@@ -1,4 +1,4 @@
-package com.github.oncsikjanos.multiHardcore.sharedHp.message;
+package com.github.oncsikjanos.multiHardcore.message;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
