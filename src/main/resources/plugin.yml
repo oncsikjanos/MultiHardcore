@@ -2,3 +2,6 @@ name: MultiHardcore
 version: '1.0-SNAPSHOT'
 main: com.github.oncsikjanos.multiHardcore.MultiHardcore
 api-version: '1.21'
+depend:
+  - NBTAPI
+  - Multiverse-Core

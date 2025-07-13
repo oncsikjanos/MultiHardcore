@@ -1,6 +1,7 @@
 package com.github.oncsikjanos.multiHardcore.manager;
 
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
 
 import java.util.Collection;
 
@@ -9,7 +10,6 @@ public class ModeManager {
 
     private final Collection<? extends Player> serverPlayerList;
     private Player healerPlayer;
-    private static MessageManager messageHandler;
 
     public static ModeManager getInstance(Collection<? extends Player> serverPlayerList) {
         if (instance == null) {
@@ -24,14 +24,16 @@ public class ModeManager {
 
     private ModeManager(Collection<? extends Player> serverPlayerList){
         this.serverPlayerList = serverPlayerList;
-        this.messageHandler = new MessageManager();
         //this.healerPlayer = null;
     }
 
     public void playerTookDamage(String damagedPlayerName, String damagerName, double dmgAmount){
          serverPlayerList.forEach(player -> {
-             player.damage(dmgAmount);
-             messageHandler.sendDMGMessageToPlayers(player, damagedPlayerName, damagerName, dmgAmount);
+             if(player.getName().equals(damagedPlayerName)){
+                 player.damage(dmgAmount);
+             }
+
+             MessageManager.sendDMGMessageToPlayers(player, damagedPlayerName, damagerName, dmgAmount);
          });
     }
 
@@ -56,15 +58,41 @@ public class ModeManager {
     }
 
     /* TODO: Maybe not needed because of basic DMG mechanism*/
-    public void playerDeath(){
+    public void playerDeath(String deadPlayerName){
         serverPlayerList.forEach(p -> {
-            p.setHealth(0);
+            if(!p.getName().equals(deadPlayerName) && p.getHealth() > 0) {
+                p.setHealth(0);
+            }
         });
     }
 
     /*TODO: Have to check if it's needed ingame*/
-    public void playerHealing(Player player){
-        if(checkHealerPlayerEqual(player)){}
+    public void playerHealing(Player player, EntityRegainHealthEvent.RegainReason regainReason, double healthAmount){
+        if(regainReason == EntityRegainHealthEvent.RegainReason.SATIATED) {
+            if(checkHealerPlayerEqual(player)){
+                serverPlayerList.forEach(p -> {
+                    if(!checkHealerPlayerEqual(p)){
+                        p.setHealth(player.getHealth());
+                    }
+                });
+            }
+            else{
+                player.setHealth(player.getHealth() - healthAmount);
+            }
+        }
+        else{
+            serverPlayerList.forEach(serverPlayer -> {
+                if(!serverPlayer.getUniqueId().equals(player.getUniqueId())){
+                    if(serverPlayer.getHealth() > player.getHealth()){
+                        player.setHealth(serverPlayer.getHealth());
+                    }
+                    else{
+                        serverPlayer.setHealth(player.getHealth());
+                    }
+
+                }
+            });
+        }
     }
 
     private boolean checkHealerPlayerEqual(Player player){

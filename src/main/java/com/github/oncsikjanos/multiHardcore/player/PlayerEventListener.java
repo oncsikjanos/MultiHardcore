@@ -43,7 +43,11 @@ public class PlayerEventListener implements Listener {
     /*TODO: Have to check if it's needed ingame*/
     @EventHandler
     public void onPlayerHealthRegen(EntityRegainHealthEvent e){
-        if(e.getEntity() instanceof Player){
+        if(e.getEntity() instanceof Player player){
+            if(e.getRegainReason() != EntityRegainHealthEvent.RegainReason.SATIATED)
+            {
+                modeManager.playerHealing(player, e.getRegainReason(), e.getAmount());
+            }
         }
 
     }
@@ -51,7 +55,7 @@ public class PlayerEventListener implements Listener {
     /* TODO: Maybe not needed because of basic DMG mechanism*/
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent e){
-        modeManager.playerDeath();
+        modeManager.playerDeath(e.getPlayer().getName());
     }
 
     @EventHandler

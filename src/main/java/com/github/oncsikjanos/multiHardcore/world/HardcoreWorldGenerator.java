@@ -1,20 +1,41 @@
 package com.github.oncsikjanos.multiHardcore.world;
 
+import de.tr7zw.nbtapi.NBT;
+import de.tr7zw.nbtapi.iface.NBTFileHandle;
+import de.tr7zw.nbtapi.iface.ReadWriteNBT;
+import net.minecraft.network.protocol.game.ClientboundRespawnPacket;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.codehaus.plexus.util.FileUtils;
 import org.jetbrains.annotations.NotNull;
+import org.mvplugins.multiverse.core.MultiverseCoreApi;
+import org.mvplugins.multiverse.core.utils.result.Attempt;
+import org.mvplugins.multiverse.core.world.LoadedMultiverseWorld;
+import org.mvplugins.multiverse.core.world.WorldManager;
+import org.mvplugins.multiverse.core.world.options.CreateWorldOptions;
+import org.mvplugins.multiverse.core.world.options.UnloadWorldOptions;
+import org.mvplugins.multiverse.core.world.reasons.CreateFailureReason;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class HardcoreWorldGenerator {
 
-    public World generateWorld(){
+    public static World generateWorld() {
         String worldName = "hardcore_world";
+        Date currentDate = new Date();
+
+        //worldName = worldName.concat();
 
         if(Bukkit.getWorld(worldName) != null){
             File previousWorld = Bukkit.getWorld(worldName).getWorldFolder();
@@ -31,17 +52,80 @@ public class HardcoreWorldGenerator {
         return worldCreator.createWorld();
     }
 
-    public void teleportToWorld(@NotNull World world, @NotNull Player player){
-        player.teleport(world.getSpawnLocation());
+    public static void generateWorldWithMultiVerse(String worldName, Plugin plugin){
+        Logger logger = Bukkit.getLogger();
+        MultiverseCoreApi mvCoreApi = MultiverseCoreApi.get();
+
+        WorldManager worldManager = mvCoreApi.getWorldManager();
+        CreateWorldOptions createWorldOptions = CreateWorldOptions.worldName(worldName);
+
+        Attempt<LoadedMultiverseWorld, CreateFailureReason> worldCreation = worldManager.createWorld(createWorldOptions);
+
+        if(worldCreation.isSuccess()){
+            World world = worldCreation.get().getBukkitWorld().get();
+            File worldFolder =  world.getWorldFolder();
+            logger.log(Level.INFO, "Generated world folder: " + worldFolder.getAbsolutePath());
+
+            world.getChunkAt(0,0).load();
+            world.save();
+
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                try{
+                    File levelDat  =  new File(worldFolder, "level.dat");
+                    logger.log(Level.INFO, "Loading level.dat");
+                    logger.log(Level.INFO, "level.dat location: "+levelDat.getAbsolutePath());
+                    logger.log(Level.INFO, "level.dat exists: "+levelDat.exists());
+                    if(levelDat.exists()){
+                        NBTFileHandle nbtFile = NBT.getFileHandle(levelDat);
+                        ReadWriteNBT dataCompound = nbtFile.getCompound("Data");
+
+                        if(dataCompound != null){
+                            worldManager.unloadWorld(UnloadWorldOptions.world(worldCreation.get()));
+
+                            logger.log(Level.INFO, "Hardcore before set is: "+dataCompound.getBoolean("hardcore"));
+                            dataCompound.setBoolean("hardcore", true);
+                            logger.log(Level.INFO, "Set hardcore to true");
+                            logger.log(Level.INFO, "Hardcore is: "+dataCompound.getBoolean("hardcore"));
+                            nbtFile.save();
+                        }
+                        else{
+                            logger.log(Level.WARNING, "Could not load DATA compound from level.dat");
+                        }
+
+                        logger.log(Level.INFO, "Saved level.dat");
+                        worldManager.loadWorld(worldName);
+                    }
+
+                } catch(IOException e){
+                    logger.warning("Error during setting hardcore level/ saving level.dat");
+                }
+            }, 5L*20);
+        }
     }
 
-    public void teleportToWorld(@NotNull World world, @NotNull Collection<? extends Player> players){
+    public static void teleportToWorldWithMultiVerse(String worldName,
+                                                     @NotNull Collection<? extends Player> players,
+                                                     Plugin plugin){
+        MultiverseCoreApi mvCoreApi = MultiverseCoreApi.get();
+        WorldManager worldManager = mvCoreApi.getWorldManager();
+        World loadedWorld  = worldManager.getLoadedWorld(worldName).get().getBukkitWorld().get();
+
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                players.forEach(player -> {
+                    player.teleport(loadedWorld.getSpawnLocation());
+                });
+                }, 5L * 20);
+    }
+
+    public static void teleportToWorld(@NotNull World world, @NotNull Collection<? extends Player> players, Plugin plugin){
         players.forEach(p -> {
-            p.teleport(world.getSpawnLocation());
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                p.teleport(world.getSpawnLocation());
+            }, 2L*20L);
         });
     }
 
-    public World getDefaultWorld(){
+    public static World getWorld(WorldUnloaderRunnable.WorldType worldType){
         World defaultWorld = Bukkit.getWorlds().stream().filter(w -> !w.isHardcore())
                 .findFirst().orElse(null);
 
@@ -51,6 +135,21 @@ public class HardcoreWorldGenerator {
         }
 
         return defaultWorld;
+    }
+
+    private static void sendRespawnPacket(Player player) {
+        // Get the NMS player
+        ServerPlayer nmsPlayer = ((CraftPlayer) player).getHandle();
+        ServerLevel serverLevel = nmsPlayer.serverLevel();
+
+
+        // Send respawn packet to refresh client state
+        nmsPlayer.connection.send(
+                new ClientboundRespawnPacket(
+                        nmsPlayer.createCommonSpawnInfo(serverLevel),
+                        ClientboundRespawnPacket.KEEP_ALL_DATA
+                )
+        );
     }
 
 }

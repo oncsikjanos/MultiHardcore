@@ -9,7 +9,7 @@ import org.bukkit.entity.Player;
 public class MessageManager {
 
 
-    public void sendDMGMessageToPlayers(Player playerToSend, String damagedPlayerName,
+    public static void sendDMGMessageToPlayers(Player playerToSend, String damagedPlayerName,
                                         String damagerName, double damage){
         TextComponent message = TeamMessage.getDMGMessage(damagedPlayerName, damagerName, damage);
 
