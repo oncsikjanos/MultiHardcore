@@ -30,26 +30,33 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class HardcoreWorldGenerator {
+    private static final int MAX_HEALTH = 20;
+    private static final int MAX_FOOD = 20;
+    private static final String WORLD_NAME = "hardcore_world";
 
     public static World generateWorld() {
-        String worldName = "hardcore_world";
+        String worldName;
         Date currentDate = new Date();
+        String dateString = currentDate.toString().replaceAll("[: ]", "-");
+        Logger logger = Bukkit.getLogger();
 
-        //worldName = worldName.concat();
+        worldName = WORLD_NAME.concat(dateString);
 
         if(Bukkit.getWorld(worldName) != null){
-            File previousWorld = Bukkit.getWorld(worldName).getWorldFolder();
-            try{
-                FileUtils.deleteDirectory(previousWorld);
-            }
-            catch(IOException e){
-                Bukkit.getLogger().warning("Cant delete previous world's directory");
-            }
+            logger.warning("World already exists! This should not happen!");
+            return null;
         }
 
         WorldCreator worldCreator = new WorldCreator(worldName)
                 .hardcore(true);
-        return worldCreator.createWorld();
+        World world = worldCreator.createWorld();
+
+        world.getChunkAt(0,0);
+        world.save();
+
+        logger.log(Level.INFO, "World Created: " + worldName);
+
+        return world;
     }
 
     public static void generateWorldWithMultiVerse(String worldName, Plugin plugin){
@@ -121,7 +128,9 @@ public class HardcoreWorldGenerator {
         players.forEach(p -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 p.teleport(world.getSpawnLocation());
-            }, 2L*20L);
+                p.setHealth(MAX_HEALTH);
+                p.setFoodLevel(MAX_FOOD);
+            }, 2*20L);
         });
     }
 
@@ -137,19 +146,32 @@ public class HardcoreWorldGenerator {
         return defaultWorld;
     }
 
-    private static void sendRespawnPacket(Player player) {
-        // Get the NMS player
-        ServerPlayer nmsPlayer = ((CraftPlayer) player).getHandle();
-        ServerLevel serverLevel = nmsPlayer.serverLevel();
+    public static void removeUnusedWorlds(String newWorldName){
+        Logger logger = Bukkit.getLogger();
 
+        Bukkit.getWorlds().forEach(world -> {
+            String loadedWorldName = world.getName();
+            logger.log(Level.INFO, "CHECK IF REMOVEABLE: " + loadedWorldName);
 
-        // Send respawn packet to refresh client state
-        nmsPlayer.connection.send(
-                new ClientboundRespawnPacket(
-                        nmsPlayer.createCommonSpawnInfo(serverLevel),
-                        ClientboundRespawnPacket.KEEP_ALL_DATA
-                )
-        );
+            if(!loadedWorldName.equals(newWorldName)){
+                if(!Bukkit.isTickingWorlds()){
+                    File previousWorld = Bukkit.getWorld(loadedWorldName).getWorldFolder();
+
+                    Bukkit.unloadWorld(world, false);
+
+                    if(loadedWorldName.contains(WORLD_NAME)) {
+                        try{
+                            FileUtils.deleteDirectory(previousWorld);
+                            logger.log(Level.INFO, "Removed unused world: " + world.getName());
+
+                        }
+                        catch(IOException e){
+                            Bukkit.getLogger().warning("Cant delete previous world's directory");
+                        }
+                    }
+                }
+            }
+        });
     }
 
 }

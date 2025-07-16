@@ -4,10 +4,7 @@ import com.github.oncsikjanos.multiHardcore.manager.ModeManager;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityRegainHealthEvent;
-import org.bukkit.event.entity.FoodLevelChangeEvent;
-import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
@@ -21,7 +18,7 @@ public class PlayerEventListener implements Listener {
     }
 
     @EventHandler
-    public void onPlayerDamage(EntityDamageByEntityEvent e) {
+    public void onPlayerDamageFromAnotherPlayer(EntityDamageByEntityEvent e) {
         if(e.getEntity() instanceof Player p){
             String damagerName = e.getDamager().getName();
             String damagedPlayerName = p.getName();
@@ -36,6 +33,13 @@ public class PlayerEventListener implements Listener {
     public void onPlayerHunger(FoodLevelChangeEvent e) {
         if(e.getEntity() instanceof Player player){
             modeManager.playerHungerChanged(player);
+        }
+    }
+
+    @EventHandler
+    public void onPlayerDamage(EntityDamageEvent e) {
+        if(e.getEntity() instanceof Player p){
+            
         }
     }
 

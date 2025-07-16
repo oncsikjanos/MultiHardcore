@@ -48,10 +48,16 @@ public class GenerateCommand {
 
         String worldName = "hardcore_world_mv";
 
-        HardcoreWorldGenerator.generateWorldWithMultiVerse(worldName, ownPlugin);
-        HardcoreWorldGenerator.teleportToWorldWithMultiVerse(worldName, Bukkit.getOnlinePlayers(), ownPlugin);
+        /*HardcoreWorldGenerator.generateWorldWithMultiVerse(worldName, ownPlugin);*/
+        World generatedWorld  = HardcoreWorldGenerator.generateWorld();
+        /*HardcoreWorldGenerator.teleportToWorldWithMultiVerse(worldName, Bukkit.getOnlinePlayers(), ownPlugin);*/
+        if(generatedWorld != null){
+            HardcoreWorldGenerator.teleportToWorld(generatedWorld, Bukkit.getOnlinePlayers(), ownPlugin);
+            HardcoreWorldGenerator.removeUnusedWorlds(generatedWorld.getName());
+        }
 
         logger.log(Level.INFO, "Hardcore World Generated: " + worldName);
+
 
         Bukkit.getWorlds().forEach(world -> {
             logger.log(Level.INFO, "World: " + world.getName());
