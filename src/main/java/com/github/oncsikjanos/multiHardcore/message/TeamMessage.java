@@ -5,6 +5,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Material;
+import org.bukkit.WorldBorder;
 
 public final class TeamMessage extends Message{
         public static final TextComponent ONLY_PLAYERS_CAN_USE = Message.MOD_NAME_PREFIX

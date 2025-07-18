@@ -1,5 +1,6 @@
 package com.github.oncsikjanos.multiHardcore.command;
 
+import com.github.oncsikjanos.multiHardcore.manager.ModeManager;
 import com.github.oncsikjanos.multiHardcore.message.TeamMessage;
 import com.github.oncsikjanos.multiHardcore.world.HardcoreWorldGenerator;
 import com.mojang.brigadier.Command;
@@ -33,6 +34,10 @@ public class GenerateCommand {
     private static int generateLogic(CommandContext<CommandSourceStack> ctx){
         CommandSender sender = ctx.getSource().getSender();
         Entity executor = ctx.getSource().getExecutor();
+        ModeManager modeManager = ModeManager.getInstance();
+        World normalWorld;
+        World endWorld;
+        World netherWorld;
 
         if(!(executor instanceof Player p)){
             sender.sendMessage(TeamMessage.ONLY_PLAYERS_CAN_USE);
@@ -46,17 +51,26 @@ public class GenerateCommand {
 
         Logger logger  = Bukkit.getLogger();
 
-        String worldName = "hardcore_world_mv";
+        normalWorld  = HardcoreWorldGenerator.generateWorld(HardcoreWorldGenerator.WorldType.NORMAL);
+        endWorld = HardcoreWorldGenerator.generateWorld(HardcoreWorldGenerator.WorldType.THE_END);
+        netherWorld = HardcoreWorldGenerator.generateWorld(HardcoreWorldGenerator.WorldType.NETHER);
 
-        /*HardcoreWorldGenerator.generateWorldWithMultiVerse(worldName, ownPlugin);*/
-        World generatedWorld  = HardcoreWorldGenerator.generateWorld();
-        /*HardcoreWorldGenerator.teleportToWorldWithMultiVerse(worldName, Bukkit.getOnlinePlayers(), ownPlugin);*/
-        if(generatedWorld != null){
-            HardcoreWorldGenerator.teleportToWorld(generatedWorld, Bukkit.getOnlinePlayers(), ownPlugin);
-            HardcoreWorldGenerator.removeUnusedWorlds(generatedWorld.getName());
+        if(normalWorld != null){
+            modeManager.setNormal(normalWorld);
+            HardcoreWorldGenerator.teleportToWorld(normalWorld, Bukkit.getOnlinePlayers(), ownPlugin);
+            HardcoreWorldGenerator.removeUnusedWorlds(normalWorld.getName());
+            logger.log(Level.INFO, "Hardcore World Generated: " + normalWorld.getName());
         }
 
-        logger.log(Level.INFO, "Hardcore World Generated: " + worldName);
+        if(endWorld != null){
+            modeManager.setEnd(endWorld);
+            logger.log(Level.INFO, "Hardcore End World Generated: " + endWorld.getName());
+        }
+
+        if(netherWorld != null){
+            modeManager.setNether(netherWorld);
+            logger.log(Level.INFO, "Hardcore Nether World Generated: " + netherWorld.getName());
+        }
 
 
         Bukkit.getWorlds().forEach(world -> {

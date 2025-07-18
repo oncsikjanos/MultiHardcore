@@ -6,15 +6,17 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 
 import java.util.Collection;
 
 public class PlayerEventListener implements Listener {
     private final ModeManager modeManager;
 
-    public PlayerEventListener(Collection<? extends Player> serverPlayerList){
-        this.modeManager = ModeManager.getInstance(serverPlayerList);
+    public PlayerEventListener(){
+        this.modeManager = ModeManager.getInstance();
     }
 
     @EventHandler
@@ -39,7 +41,9 @@ public class PlayerEventListener implements Listener {
     @EventHandler
     public void onPlayerDamage(EntityDamageEvent e) {
         if(e.getEntity() instanceof Player p){
-            
+            modeManager.playerTookDamageFromWorld();
+            e.getEntityType();
+            //e.getDamageSource().getDamageType()
         }
     }
 
@@ -70,6 +74,20 @@ public class PlayerEventListener implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent e){
         modeManager.playerJoinedTheGame(e.getPlayer());
+    }
+
+    @EventHandler
+    public void onPortal(PlayerPortalEvent event) {
+        Player player = event.getPlayer();
+
+        if (event.getCause() == PlayerTeleportEvent.TeleportCause.NETHER_PORTAL) {
+            modeManager.netherPortalEventHandler(player);
+            event.
+        }
+
+        if (event.getCause() == PlayerTeleportEvent.TeleportCause.END_PORTAL) {
+            modeManager.endPortalEventHandler(player);
+        }
     }
 
 }

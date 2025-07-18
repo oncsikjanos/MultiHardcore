@@ -16,7 +16,7 @@ public final class MultiHardcore extends JavaPlugin {
     public void onEnable() {
         // Plugin startup logic
         //this.modeManager = ModeManager.getInstance(getServer().getOnlinePlayers());
-        getServer().getPluginManager().registerEvents(new PlayerEventListener(getServer().getOnlinePlayers()), this);
+        getServer().getPluginManager().registerEvents(new PlayerEventListener(), this);
         this.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, commands -> {
             commands.registrar().register(new GenerateCommand(this).generateCommand().build());
             commands.registrar().register(new AbortCommand().testComamnd().build());
