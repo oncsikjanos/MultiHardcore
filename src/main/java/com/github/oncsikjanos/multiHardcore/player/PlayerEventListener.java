@@ -1,6 +1,10 @@
 package com.github.oncsikjanos.multiHardcore.player;
 
 import com.github.oncsikjanos.multiHardcore.manager.ModeManager;
+import org.bukkit.Bukkit;
+import org.bukkit.damage.DamageType;
+import org.bukkit.entity.Arrow;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -9,8 +13,10 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.projectiles.ProjectileSource;
 
 import java.util.Collection;
+import java.util.logging.Logger;
 
 public class PlayerEventListener implements Listener {
     private final ModeManager modeManager;
@@ -20,11 +26,17 @@ public class PlayerEventListener implements Listener {
     }
 
     @EventHandler
-    public void onPlayerDamageFromAnotherPlayer(EntityDamageByEntityEvent e) {
+    public void onPlayerDamageFromEntity(EntityDamageByEntityEvent e) {
         if(e.getEntity() instanceof Player p){
             String damagerName = e.getDamager().getName();
             String damagedPlayerName = p.getName();
             double dmg = e.getDamage();
+
+            if(e.getDamager() instanceof Arrow arrow){
+                 if(arrow.getShooter() instanceof LivingEntity source){
+                     damagerName = source.getName();
+                 }
+            }
 
             modeManager.playerTookDamage(damagedPlayerName, damagerName, dmg);
         }
@@ -39,14 +51,20 @@ public class PlayerEventListener implements Listener {
     }
 
     @EventHandler
-    public void onPlayerDamage(EntityDamageEvent e) {
-        if(e.getEntity() instanceof Player p){
-            modeManager.playerTookDamageFromWorld();
-            e.getEntityType();
-            //e.getDamageSource().getDamageType()
+    public void onOtherDamage(EntityDamageEvent e) {
+        if(e.getDamageSource().getDamageType() ==DamageType.GENERIC){
+            Bukkit.getLogger().warning(e.getCause().toString());
+            Bukkit.getLogger().warning("Generic cause: "+e.getDamageSource().toString());
+        }
+        else if(e.getEntity() instanceof Player p &&  e.getDamageSource().getCausingEntity() == null){
+            Bukkit.getLogger().warning("Normal cause: " + e.getCause().toString());
+            Bukkit.getLogger().warning(e.getDamageSource().toString());
+            modeManager.playerTookDamageFromWorld(p.getName(),
+                    e.getDamage(),
+                    e.getDamageSource().getDamageType(),
+                    e.getCause());
         }
     }
-
 
     /*TODO: Have to check if it's needed ingame*/
     @EventHandler
@@ -79,15 +97,29 @@ public class PlayerEventListener implements Listener {
     @EventHandler
     public void onPortal(PlayerPortalEvent event) {
         Player player = event.getPlayer();
-
+        Bukkit.getLogger().info("PlayerPortalEvent triggered");
         if (event.getCause() == PlayerTeleportEvent.TeleportCause.NETHER_PORTAL) {
-            modeManager.netherPortalEventHandler(player);
-            event.
+            //modeManager.netherPortalEventHandler(player);
         }
 
         if (event.getCause() == PlayerTeleportEvent.TeleportCause.END_PORTAL) {
-            modeManager.endPortalEventHandler(player);
+            //modeManager.endPortalEventHandler(player);
         }
     }
 
+    @EventHandler
+    public void test(PlayerTeleportEvent e){
+        if(e.getCause() == PlayerTeleportEvent.TeleportCause.END_PORTAL){
+            modeManager.endPortalEventHandler(player);
+        }
+        else if (e.getCause() == PlayerTeleportEvent.TeleportCause.NETHER_PORTAL){
+            modeManager.netherPortalEventHandler(player);
+        }
+
+        Logger logger = Bukkit.getLogger();
+        logger.info("PlayerTeleportEvent triggered");
+        logger.info("Cause: " + e.getCause().toString());
+        logger.info("Eventname" + e.getEventName());
+        logger.info("Full description: " + e.toString());
+    }
 }

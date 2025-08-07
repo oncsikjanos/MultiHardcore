@@ -1,11 +1,18 @@
 package com.github.oncsikjanos.multiHardcore.manager;
 
+import com.github.oncsikjanos.multiHardcore.message.DamageMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.damage.DamageSource;
+import org.bukkit.damage.DamageType;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 
 import java.util.Collection;
+import java.util.logging.Logger;
 
 public class ModeManager {
     private static volatile ModeManager instance;
@@ -15,6 +22,7 @@ public class ModeManager {
     private World normal;
     private World nether;
     private World end;
+    private final Logger logger;
 
     public static ModeManager getInstance() {
         if (instance == null) {
@@ -33,6 +41,7 @@ public class ModeManager {
         this.normal = null;
         this.nether = null;
         this.end = null;
+        logger = Bukkit.getLogger();
     }
 
     public World getNormal() {
@@ -67,6 +76,21 @@ public class ModeManager {
 
              MessageManager.sendDMGMessageToPlayers(player, damagedPlayerName, damagerName, dmgAmount);
          });
+    }
+
+    public void playerTookDamageFromWorld(String playerName, double dmgAmount, DamageType damageType, EntityDamageEvent.DamageCause damageCause){
+        String damageTypeName = DamageMessage.getString(damageType);
+
+        if(damageTypeName == null){
+            logger.warning("[NON_PLAYER_DMG_HANDLING] Damage type was GENERIC/GENERIC_KILL");
+            return;
+        }
+        else if(damageType == DamageType.FALL && damageCause == EntityDamageEvent.DamageCause.PROJECTILE){
+            //It is most likely caused by ender pearl which is already handled in EcntityByEntity event.
+            return;
+        }
+
+        playerTookDamage(playerName, damageTypeName, dmgAmount);
     }
 
     public void playerJoinedTheGame(Player player){
@@ -127,20 +151,16 @@ public class ModeManager {
         }
     }
 
-    public void playerTookDamageFromWorld(){
-
-    }
-
-    public void netherPortalEventHandler(Player player){
-        event.useTravelAgent(true);
-        event.getPortalTravelAgent().setCanCreatePortal(true);
+    public void netherPortalEventHandler(PlayerTeleportEvent event){
+        Player player = event.getPlayer();
+        player.setCanCreatePortal(true);
         Location location;
         if (player.getWorld() == normal) {
             location = new Location(getNether(), event.getFrom().getBlockX() / 8, event.getFrom().getBlockY(), event.getFrom().getBlockZ() / 8);
         } else {
             location = new Location(getWorld(), event.getFrom().getBlockX() * 8, event.getFrom().getBlockY(), event.getFrom().getBlockZ() * 8);
         }
-        event.setTo(event.getPortalTravelAgent().findOrCreate(location));
+        event.setTo(player.findOrCreate(location));
     }
 
     public void endPortalEventHandler(Player player){
